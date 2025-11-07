@@ -657,7 +657,7 @@ async function callChineseAIService(message: string, conversationHistory: any[])
 
 // 智谱AI调用函数
 async function callZhipuAI(message: string, conversationHistory: any[]): Promise<string> {
-  const apiKey = process.env.ZHIPU_API_KEY || '智谱AI密钥'; // 从环境变量获取
+  const apiKey = process.env.ZHIPU_API_KEY ; // 从环境变量获取
   
   // 构建对话历史
   const messages = [
