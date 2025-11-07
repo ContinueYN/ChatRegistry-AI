@@ -1,0 +1,10 @@
+[
+  {
+    "id": "f84daac1-e30c-4c6f-bc47-3df73a1a0dc7",
+    "username": "admin",
+    "password": "admin123",
+    "role": "superadmin",
+    "createdAt": "2025-10-19T02:37:28.929Z",
+    "updatedAt": "2025-10-19T02:37:28.931Z"
+  }
+]
