@@ -14,10 +14,11 @@ import requests
 import os
 
 # typing: 类型提示，让代码更清晰
-from typing import List, Optional
+from typing import List
 
 # logging: 日志记录，用于调试和错误追踪
 import logging
+from logging.handlers import RotatingFileHandler
 
 # datetime: 日期时间处理
 from datetime import datetime
@@ -28,8 +29,25 @@ from dotenv import load_dotenv
 # 加载 .env 文件
 load_dotenv()
 
+# 创建日志目录
+log_dir = "logs"
+if not os.path.exists(log_dir):
+    os.makedirs(log_dir)
+
 # 配置日志
-logging.basicConfig(level=logging.INFO) # 设置日志级别为 INFO，记录重要信息
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+    handlers=[
+        # 文件日志，最大 10MB，保留 5 个备份
+        RotatingFileHandler(
+            os.path.join(log_dir, "ai_service.log"),
+            maxBytes=10*1024*1024,  # 10MB
+            backupCount=5,
+            encoding='utf-8'
+        )
+    ]
+)
 logger = logging.getLogger(__name__)
 
 # 创建 FastAPI 应用实例
@@ -131,47 +149,6 @@ def call_zhipu_ai(message: str, conversation_history: List[ChatMessage]) -> str:
         logger.error(f"Error calling Zhipu AI: {str(e)}")
         raise
 
-# 本地模型调用（可选 - 需要安装相应库）
-def call_local_model(message: str, conversation_history: List[ChatMessage]) -> str:
-    """
-    使用本地模型进行回复
-    需要安装：transformers, torch 等
-    """
-    try:
-        # 这里可以集成各种本地模型
-        # 例如使用 ChatGLM、Qwen、LLaMA 等
-        
-        # 示例：使用简单的规则作为备用
-        fallback_responses = {
-            "你好": "你好！我是AI助手，有什么可以帮助您的吗？喵~",
-            "你是谁": "我是由Python实现的AI助手，专门为这个应用提供服务！喵~",
-            "再见": "再见！祝您有美好的一天！喵~"
-        }
-        
-        for key, response in fallback_responses.items():
-            if key in message:
-                return response
-        
-        return f"关于\"{message}\"，这是一个很好的问题！目前我主要使用智谱AI服务来回答您。喵~"
-        
-    except Exception as e:
-        logger.error(f"Error in local model: {str(e)}")
-        raise
-
-# 备用回复生成
-def generate_fallback_response(message: str) -> str:
-    fallback_responses = {
-        '你好': '你好！我是AI助手，有什么可以帮助您的吗？',
-        '你是谁': '我是由Python实现的AI助手！',
-        '再见': '再见！祝您有美好的一天！'
-    }
-    
-    for key, response in fallback_responses.items():
-        if key in message:
-            return response
-    
-    return f'关于"{message}"，这是一个很好的问题！目前AI服务正在维护中，我会尽快恢复。您也可以尝试重新提问或稍后再试。'
-
 # 主聊天端点
 @app.post("/chat", response_model=ChatResponse)
 async def chat_endpoint(request: ChatRequest):
@@ -179,13 +156,8 @@ async def chat_endpoint(request: ChatRequest):
         if not request.message or not request.message.strip():
             raise HTTPException(status_code=400, detail="消息内容不能为空")
         
-        # 首先尝试智谱AI
-        try:
-            reply = call_zhipu_ai(request.message, request.conversationHistory)
-        except Exception as e:
-            logger.warning(f"Zhipu AI failed, falling back to local model: {str(e)}")
-            # 备用方案：本地模型
-            reply = call_local_model(request.message, request.conversationHistory)
+        # 直接使用智谱AI
+        reply = call_zhipu_ai(request.message, request.conversationHistory)
         
         # 返回格式化的响应，包含回复和时间戳
         return ChatResponse(
@@ -195,12 +167,8 @@ async def chat_endpoint(request: ChatRequest):
         
     except Exception as e:
         logger.error(f"Chat error: {str(e)}")
-        # 最终备用回复
-        fallback_reply = generate_fallback_response(request.message)
-        return ChatResponse(
-            reply=fallback_reply,
-            timestamp=datetime.now().isoformat()
-        )
+        # 直接抛出异常，由TS端处理备用回复
+        raise HTTPException(status_code=500, detail="AI服务暂时不可用")
 
 # 健康检查端点
 @app.get("/health")
@@ -213,13 +181,12 @@ async def service_info():
     return {
         "service": "Python AI Chat Service",
         "version": "1.0.0",
-        "supported_models": ["Zhipu AI GLM-4", "Local Fallback"],
+        "supported_models": ["Zhipu AI GLM-4"],
         "status": "running"
     }
 
 if __name__ == "__main__":
     import uvicorn
-    from datetime import datetime
     
     port = int(os.getenv("PYTHON_AI_PORT", "8000"))
     
