@@ -172,7 +172,7 @@ const modeLabels = {
 }
 
 const modeEndpoints = {
-  enhanced: '/api/ai/chat',
+  enhanced: '/api/ai/chat/enhanced',
   analyze: '/api/ai/analyze',
   creative: '/api/ai/creative'
 }

@@ -1,0 +1,3 @@
+2025-11-08 14:19:14,046 - __main__ - INFO - === AI服务启动 - 纯文件日志模式 ===
+2025-11-08 14:19:14,046 - __main__ - INFO - 日志文件路径: E:\Work-program\Project\Label\backend\ai\logs\ai_service.log
+2025-11-08 14:19:14,110 - __main__ - INFO - Starting Enhanced Python AI Service on port 8000
