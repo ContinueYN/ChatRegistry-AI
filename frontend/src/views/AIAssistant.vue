@@ -4,7 +4,6 @@
     <header class="ai-header">
       <div class="header-content">
         <h1><img src="@/assets/icons/favicon.ico" alt="AI助手" class="header-icon"> AI助手</h1>
-        <button class="back-btn" @click="goBack">返回</button>
         <div class="header-actions">
           <button class="theme-toggle" @click="toggleTheme" :title="isDarkMode ? '切换到浅色模式' : '切换到深色模式'">
             {{ isDarkMode ? '🌙' : '☀️' }}
@@ -114,6 +113,11 @@ const goBack = () => {
   router.push('/more')
 }
 
+// 新增：跳转到首页函数
+const goToHome = () => {
+  router.push('/')
+}
+
 interface Message {
   type: 'user' | 'ai'
   content: string
@@ -138,10 +142,10 @@ const textInput = ref<HTMLTextAreaElement>()
 // 快捷问题示例
 const quickQuestions = [
   '如何学习Vue3？',
-  '推荐一些前端开发工具',
-  '解释一下TypeScript的优点',
-  '如何优化网站性能？',
-  '什么是响应式设计？'
+  '你是谁',
+  '你叫什么名字',
+  '返回',
+  '回到首页'
 ]
 
 // 格式化时间
@@ -177,9 +181,83 @@ const processAIContent = (content: string): string => {
   }
 }
 
+// 检查是否需要特殊处理（如返回首页或更多页面）
+const checkSpecialCommands = (message: string): boolean => {
+  const normalizedMessage = message.trim().toLowerCase()
+  
+  // 检查是否包含返回首页的关键词
+  const homeKeywords = ['返回首页', '回到首页', '首页', '回首页', 'go home', 'home', '主页面']
+  
+  // 检查是否包含返回更多页面的关键词
+  const moreKeywords = ['返回更多', '回到更多', '更多页面', '回更多', '更多', 'go back', 'back', '返回']
+  
+  if (homeKeywords.some(keyword => normalizedMessage.includes(keyword.toLowerCase()))) {
+    // 添加用户消息
+    const userMessage: Message = {
+      type: 'user',
+      content: message,
+      time: formatTime()
+    }
+    messages.value.push(userMessage)
+    
+    // 添加AI确认消息
+    const aiMessage: Message = {
+      type: 'ai',
+      content: '好的，马上为您跳转到首页！',
+      renderedContent: processAIContent('好的，马上为您跳转到首页！'),
+      time: formatTime(),
+      isTyping: false
+    }
+    messages.value.push(aiMessage)
+    
+    // 延迟跳转，让用户看到确认消息
+    setTimeout(() => {
+      goToHome()
+    }, 1000)
+    
+    return true
+  }
+  
+  if (moreKeywords.some(keyword => normalizedMessage.includes(keyword.toLowerCase()))) {
+    // 添加用户消息
+    const userMessage: Message = {
+      type: 'user',
+      content: message,
+      time: formatTime()
+    }
+    messages.value.push(userMessage)
+    
+    // 添加AI确认消息
+    const aiMessage: Message = {
+      type: 'ai',
+      content: '好的，马上为您返回到更多页面！',
+      renderedContent: processAIContent('好的，马上为您返回到更多页面！'),
+      time: formatTime(),
+      isTyping: false
+    }
+    messages.value.push(aiMessage)
+    
+    // 延迟跳转，让用户看到确认消息
+    setTimeout(() => {
+      goBack()
+    }, 1000)
+    
+    return true
+  }
+  
+  return false
+}
+
 // 发送消息 - 调用真实AI API
 const sendMessage = async () => {
   if (!userInput.value.trim()) return
+
+  // 检查特殊命令（如返回首页或更多页面）
+  if (checkSpecialCommands(userInput.value)) {
+    userInput.value = ''
+    scrollToBottom()
+    return
+  }
 
   const userMessage: Message = {
     type: 'user',
@@ -656,45 +734,6 @@ onMounted(() => {
   background: #ccc;
   cursor: not-allowed;
   opacity: 0.6;
-}
-
-.back-btn {
-  background: #f8f9fa;
-  color: #333;
-  border: 2px solid #e1e5e9;
-  padding: 10px 20px;
-  border-radius: 6px;
-  cursor: pointer;
-  transition: all 0.3s ease;
-  font-size: 0.9rem;
-  position: relative;
-  overflow: hidden;
-  z-index: 1;
-}
-
-.back-btn::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: -100%;
-  width: 100%;
-  height: 100%;
-  background: linear-gradient(90deg, 
-    transparent, 
-    rgba(102, 234, 214, 0.3), 
-    rgba(247, 249, 120, 0.3), 
-    transparent);
-  transition: left 0.6s ease;
-  z-index: -1;
-}
-
-.back-btn:hover::before {
-  left: 100%;
-}
-
-.back-btn:hover {
-  background: #e9ecef;
-  border-color: #66ead6;
 }
 
 /* 打字指示器 */
