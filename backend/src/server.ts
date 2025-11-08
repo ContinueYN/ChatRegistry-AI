@@ -642,17 +642,38 @@ app.post('/api/ai/chat', async (req: Request, res: Response) => {
   }
 });
 
-// 国内AI服务调用函数
+// 优化的 AI 服务调用函数
 async function callChineseAIService(message: string, conversationHistory: any[]): Promise<string> {
-  // 方法1: 智谱AI (GLM) - 免费额度大
+  const pythonServiceUrl = 'http://127.0.0.1:8000';
+  
   try {
-    return await callZhipuAI(message, conversationHistory);
-  } catch (error) {
-    console.error('智谱AI调用失败:', error);
+    const pythonResp = await axios.post(`${pythonServiceUrl}/chat`, {
+      message,
+      conversationHistory: conversationHistory.map(msg => ({
+        role: msg.type === 'user' ? 'user' : 'assistant',
+        content: msg.content
+      }))
+    }, {
+      timeout: 30000
+    });
+
+    if (pythonResp?.data?.reply) {
+      return pythonResp.data.reply;
+    }
+  } catch (err: any) {
+    console.error('Python AI 服务调用失败:', err?.message || err);
     
-    // 方法2: 如果智谱AI失败，使用模拟回复作为备用
-    return generateFallbackResponse(message);
+    // 如果 Python 服务完全不可用，尝试直接调用智谱AI作为备用
+    try {
+      console.log('尝试备用方案：直接调用智谱AI');
+      return await callZhipuAI(message, conversationHistory);
+    } catch (error) {
+      console.error('所有AI服务均失败，使用本地备用回复');
+      return generateFallbackResponse(message);
+    }
   }
+  
+  return generateFallbackResponse(message);
 }
 
 // 智谱AI调用函数
@@ -712,7 +733,7 @@ async function callOlama(message: string, conversationHistory: any[]): Promise<s
   ];
 
   const response = await axios.post('https://open.bigmodel.cn/api/paas/v4/chat/completions', {
-    model: "glm-4.5v", // 使用Olama的list拥有模型（deepseek-llm:7b）
+    model: "deepseek-llm:7b", // 使用Olama的list拥有模型（deepseek-llm:7b）
     messages: messages,
     temperature: 0.7,
     max_tokens: 1000
