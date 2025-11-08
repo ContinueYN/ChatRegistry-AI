@@ -555,10 +555,10 @@ app.get('/api/admin/users', async (req: Request, res: Response) => {
   }
 });
 
-// AI聊天端点
+// AI聊天端点 - 修改为支持模式选择
 app.post('/api/ai/chat', async (req: Request, res: Response) => {
   try {
-    const { message, conversationHistory = [] } = req.body;
+    const { message, conversationHistory = [], mode = 'chat' } = req.body;
 
     if (!message) {
       return res.status(400).json({
@@ -622,14 +622,15 @@ app.post('/api/ai/chat', async (req: Request, res: Response) => {
       }
     }
 
-    // 调用国内AI服务
-    const aiResponse = await callChineseAIService(message, conversationHistory);
+    // 调用AI服务，传入选择的模式
+    const aiResponse = await callAIServiceWithMode(message, conversationHistory, mode);
 
     res.json({
       success: true,
       data: {
         reply: aiResponse,
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
+        mode: mode // 返回使用的模式
       }
     });
 
@@ -642,13 +643,94 @@ app.post('/api/ai/chat', async (req: Request, res: Response) => {
   }
 });
 
-// 优化的 AI 服务调用函数
-async function callChineseAIService(message: string, conversationHistory: any[]): Promise<string> {
+// 专业分析端点
+app.post('/api/ai/analyze', async (req: Request, res: Response) => {
+    try {
+    const { message, conversationHistory = [] } = req.body;
+
+    if (!message) {
+      return res.status(400).json({
+        success: false,
+        message: '消息内容不能为空'
+      });
+    }
+
+    // 调用Python服务的专业分析模式
+    const aiResponse = await callAIServiceWithMode(message, conversationHistory, 'analyze');
+
+    res.json({
+      success: true,
+      data: {
+        reply: aiResponse,
+        timestamp: new Date().toISOString(),
+        mode: 'analyze'
+      }
+    });
+
+  } catch (error) {
+    console.error('专业分析错误:', error);
+    res.status(500).json({
+      success: false,
+      message: '专业分析服务暂时不可用，请稍后重试'
+    });
+  }
+});
+
+// 创意模式端点
+app.post('/api/ai/creative', async (req: Request, res: Response) => {
+    try {
+    const { message, conversationHistory = [] } = req.body;
+
+    if (!message) {
+      return res.status(400).json({
+        success: false,
+        message: '消息内容不能为空'
+      });
+    }
+
+    // 调用Python服务的创意模式
+    const aiResponse = await callAIServiceWithMode(message, conversationHistory, 'creative');
+
+    res.json({
+      success: true,
+      data: {
+        reply: aiResponse,
+        timestamp: new Date().toISOString(),
+        mode: 'creative'
+      }
+    });
+
+  } catch (error) {
+    console.error('创意模式错误:', error);
+    res.status(500).json({
+      success: false,
+      message: '创意服务暂时不可用，请稍后重试'
+    });
+  }
+});
+
+// 通用的AI服务调用函数（支持不同模式）
+async function callAIServiceWithMode(message: string, conversationHistory: any[], mode: 'chat' | 'enhanced' | 'analyze' | 'creative'): Promise<string> {
   const pythonServiceUrl = 'http://127.0.0.1:8000';
   
+  // 根据模式选择端点
+  let endpoint = '/chat';
+  switch (mode) {
+    case 'enhanced':
+      endpoint = '/chat/enhanced';
+      break;
+    case 'analyze':
+      endpoint = '/analyze';
+      break;
+    case 'creative':
+      endpoint = '/creative';
+      break;
+    default:
+      endpoint = '/chat';
+  }
+  
   try {
-    // 使用强化端点替代普通端点
-    const pythonResp = await axios.post(`${pythonServiceUrl}/chat/enhanced`, {
+    const pythonResp = await axios.post(`${pythonServiceUrl}${endpoint}`, {
       message,
       conversationHistory: conversationHistory.map(msg => ({
         role: msg.type === 'user' ? 'user' : 'assistant',
@@ -662,43 +744,44 @@ async function callChineseAIService(message: string, conversationHistory: any[])
       return pythonResp.data.reply;
     }
   } catch (err: any) {
-    console.error('Python AI 强化服务调用失败，尝试普通端点:', err?.message || err);
+    console.error(`Python AI ${mode} 模式调用失败:`, err?.message || err);
     
-    // 如果强化端点失败，降级到普通端点
-    try {
-      const fallbackResp = await axios.post(`${pythonServiceUrl}/chat`, {
-        message,
-        conversationHistory: conversationHistory.map(msg => ({
-          role: msg.type === 'user' ? 'user' : 'assistant',
-          content: msg.content
-        }))
-      }, {
-        timeout: 30000
-      });
-
-      if (fallbackResp?.data?.reply) {
-        return fallbackResp.data.reply;
-      }
-    } catch (fallbackErr: any) {
-      console.error('Python AI 普通服务也失败:', fallbackErr?.message || fallbackErr);
-      
-      // 如果 Python 服务完全不可用，尝试直接调用智谱AI作为备用
+    // 降级到普通聊天模式
+    if (mode !== 'chat') {
       try {
-        console.log('尝试备用方案：直接调用智谱AI');
-        return await callZhipuAI(message, conversationHistory);
-      } catch (error) {
-        console.error('所有AI服务均失败，使用本地备用回复');
-        return generateFallbackResponse(message);
+        console.log(`降级到普通聊天模式`);
+        return await callAIServiceWithMode(message, conversationHistory, 'chat');
+      } catch (fallbackErr) {
+        console.error('普通聊天模式也失败:', fallbackErr);
       }
+    }
+    
+    // 如果所有Python服务都失败，尝试直接调用智谱AI
+    try {
+      console.log('尝试备用方案：直接调用智谱AI');
+      return await callZhipuAI(message, conversationHistory);
+    } catch (error) {
+      console.error('所有AI服务均失败，使用本地备用回复');
+      return generateFallbackResponse(message);
     }
   }
   
   return generateFallbackResponse(message);
 }
 
-// 智谱AI调用函数
+// 新的通用函数 - 修改为默认使用chat模式
+async function callChineseAIService(message: string, conversationHistory: any[]): Promise<string> {
+  return callAIServiceWithMode(message, conversationHistory, 'chat');
+}
+
+// 智谱AI调用函数 - 修复环境变量空格问题
 async function callZhipuAI(message: string, conversationHistory: any[]): Promise<string> {
-  const apiKey = process.env.ZHIPU_API_KEY ; // 从环境变量获取
+  const apiKey = process.env.ZHIPU_API_KEY; 
+  
+  if (!apiKey) {
+    console.error('ZHIPU_API_KEY 环境变量未设置');
+    return generateFallbackResponse(message);
+  }
   
   // 构建对话历史
   const messages = [
@@ -716,20 +799,25 @@ async function callZhipuAI(message: string, conversationHistory: any[]): Promise
     }
   ];
 
-  const response = await axios.post('https://open.bigmodel.cn/api/paas/v4/chat/completions', {
-    model: "glm-4.5v", // 使用GLM-4.5v模型
-    messages: messages,
-    temperature: 0.7,
-    max_tokens: 1000
-  }, {
-    headers: {
-      'Authorization': `Bearer ${apiKey}`,
-      'Content-Type': 'application/json'
-    },
-    timeout: 30000
-  });
+  try {
+    const response = await axios.post('https://open.bigmodel.cn/api/paas/v4/chat/completions', {
+      model: "glm-4.5v", // 使用GLM-4.5v模型
+      messages: messages,
+      temperature: 0.7,
+      max_tokens: 1000
+    }, {
+      headers: {
+        'Authorization': `Bearer ${apiKey}`,
+        'Content-Type': 'application/json'
+      },
+      timeout: 30000
+    });
 
-  return response.data.choices[0]?.message?.content || '抱歉，我没有理解您的问题。';
+    return response.data.choices[0]?.message?.content || '抱歉，我没有理解您的问题。';
+  } catch (error: any) {
+    console.error('智谱AI调用失败:', error?.message || error);
+    return generateFallbackResponse(message);
+  }
 }
 
 // 本地部署备用方案（未引用）有密钥再加

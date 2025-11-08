@@ -5,6 +5,14 @@
       <div class="header-content">
         <h1><img src="@/assets/icons/favicon.ico" alt="AI助手" class="header-icon"> AI助手</h1>
         <div class="header-actions">
+          <!-- 模式选择 -->
+          <div class="mode-selector">
+            <select v-model="currentMode" @change="onModeChange" class="mode-select">
+              <option value="enhanced">智能模式</option>
+              <option value="analyze">专业分析</option>
+              <option value="creative">创意模式</option>
+            </select>
+          </div>
           <button class="theme-toggle" @click="toggleTheme" :title="isDarkMode ? '切换到浅色模式' : '切换到深色模式'">
             {{ isDarkMode ? '🌙' : '☀️' }}
           </button>
@@ -14,6 +22,14 @@
         </div>
       </div>
     </header>
+
+    <!-- 模式提示 -->
+    <div class="mode-indicator" :class="currentMode">
+      <span class="mode-icon">
+        {{ modeIcons[currentMode] }}
+      </span>
+      <span class="mode-text">{{ modeLabels[currentMode] }}</span>
+    </div>
 
     <!-- 聊天区域 -->
     <main class="chat-container">
@@ -139,6 +155,28 @@ const messages = ref<Message[]>([])
 const messagesContainer = ref<HTMLElement>()
 const textInput = ref<HTMLTextAreaElement>()
 
+// 模式选择
+const currentMode = ref('enhanced') // enhanced, analyze, creative
+
+// 模式配置
+const modeIcons = {
+  enhanced: '🧠',
+  analyze: '📊',
+  creative: '💡'
+}
+
+const modeLabels = {
+  enhanced: '智能模式 - 综合运用多种增强技术',
+  analyze: '专业分析 - 深度结构化分析',
+  creative: '创意模式 - 充分发挥想象力'
+}
+
+const modeEndpoints = {
+  enhanced: '/api/ai/chat',
+  analyze: '/api/ai/analyze',
+  creative: '/api/ai/creative'
+}
+
 // 快捷问题示例
 const quickQuestions = [
   '如何学习Vue3？',
@@ -248,6 +286,12 @@ const checkSpecialCommands = (message: string): boolean => {
   return false
 }
 
+// 模式变更处理
+const onModeChange = () => {
+  // 可以在这里添加模式切换的提示消息
+  console.log(`切换到${modeLabels[currentMode.value]}模式`)
+}
+
 // 发送消息 - 调用真实AI API
 const sendMessage = async () => {
   if (!userInput.value.trim()) return
@@ -283,8 +327,9 @@ const sendMessage = async () => {
   scrollToBottom()
 
   try {
-    // 调用后端AI API
-    const response = await axios.post('http://localhost:5000/api/ai/chat', {
+    // 根据当前模式选择不同的端点
+    const endpoint = modeEndpoints[currentMode.value]
+    const response = await axios.post(`http://localhost:5000${endpoint}`, {
       message: input,
       conversationHistory: messages.value.slice(0, -1) // 排除当前的正在输入消息
     })
@@ -494,6 +539,7 @@ onMounted(() => {
 
 .header-actions {
   display: flex;
+  align-items: center;
   gap: 1rem;
 }
 
@@ -542,6 +588,72 @@ onMounted(() => {
 
 .clear-chat:hover {
   background: #ff3742;
+}
+
+/* 模式选择器样式 */
+.mode-selector {
+  margin-right: 1rem;
+}
+
+.mode-select {
+  padding: 0.5rem 1rem;
+  border: 1px solid #e1e5e9;
+  border-radius: 8px;
+  background: #f8f9fa;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.dark-mode .mode-select {
+  background: #404040;
+  border-color: #555;
+  color: #e0e0e0;
+}
+
+.mode-select:focus {
+  outline: none;
+  border-color: #4CAF50;
+}
+
+/* 模式指示器样式 */
+.mode-indicator {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.5rem;
+  background: rgba(76, 175, 80, 0.1);
+  border-bottom: 1px solid #e1e5e9;
+  font-size: 0.9rem;
+  gap: 0.5rem;
+}
+
+.mode-indicator.analyze {
+  background: rgba(33, 150, 243, 0.1);
+}
+
+.mode-indicator.creative {
+  background: rgba(156, 39, 176, 0.1);
+}
+
+.dark-mode .mode-indicator {
+  background: rgba(76, 175, 80, 0.2);
+}
+
+.dark-mode .mode-indicator.analyze {
+  background: rgba(33, 150, 243, 0.2);
+}
+
+.dark-mode .mode-indicator.creative {
+  background: rgba(156, 39, 176, 0.2);
+}
+
+.mode-icon {
+  font-size: 1.1rem;
+}
+
+.mode-text {
+  font-weight: 500;
 }
 
 /* 聊天区域样式 */
