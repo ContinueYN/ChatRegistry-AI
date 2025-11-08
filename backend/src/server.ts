@@ -647,7 +647,8 @@ async function callChineseAIService(message: string, conversationHistory: any[])
   const pythonServiceUrl = 'http://127.0.0.1:8000';
   
   try {
-    const pythonResp = await axios.post(`${pythonServiceUrl}/chat`, {
+    // 使用强化端点替代普通端点
+    const pythonResp = await axios.post(`${pythonServiceUrl}/chat/enhanced`, {
       message,
       conversationHistory: conversationHistory.map(msg => ({
         role: msg.type === 'user' ? 'user' : 'assistant',
@@ -661,15 +662,34 @@ async function callChineseAIService(message: string, conversationHistory: any[])
       return pythonResp.data.reply;
     }
   } catch (err: any) {
-    console.error('Python AI 服务调用失败:', err?.message || err);
+    console.error('Python AI 强化服务调用失败，尝试普通端点:', err?.message || err);
     
-    // 如果 Python 服务完全不可用，尝试直接调用智谱AI作为备用
+    // 如果强化端点失败，降级到普通端点
     try {
-      console.log('尝试备用方案：直接调用智谱AI');
-      return await callZhipuAI(message, conversationHistory);
-    } catch (error) {
-      console.error('所有AI服务均失败，使用本地备用回复');
-      return generateFallbackResponse(message);
+      const fallbackResp = await axios.post(`${pythonServiceUrl}/chat`, {
+        message,
+        conversationHistory: conversationHistory.map(msg => ({
+          role: msg.type === 'user' ? 'user' : 'assistant',
+          content: msg.content
+        }))
+      }, {
+        timeout: 30000
+      });
+
+      if (fallbackResp?.data?.reply) {
+        return fallbackResp.data.reply;
+      }
+    } catch (fallbackErr: any) {
+      console.error('Python AI 普通服务也失败:', fallbackErr?.message || fallbackErr);
+      
+      // 如果 Python 服务完全不可用，尝试直接调用智谱AI作为备用
+      try {
+        console.log('尝试备用方案：直接调用智谱AI');
+        return await callZhipuAI(message, conversationHistory);
+      } catch (error) {
+        console.error('所有AI服务均失败，使用本地备用回复');
+        return generateFallbackResponse(message);
+      }
     }
   }
   

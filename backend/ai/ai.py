@@ -51,7 +51,7 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 # 创建 FastAPI 应用实例
-app = FastAPI(title="AI Chat Service", version="1.0.0")
+app = FastAPI(title="AI Chat Service", version="2.0.0")
 
 # 允许跨域
 app.add_middleware(
@@ -85,6 +85,24 @@ class ZhipuAIRequest(BaseModel):
     temperature: float = 0.7
     max_tokens: int = 1000
 
+# 强化版的系统提示词
+ENHANCED_SYSTEM_PROMPT = """你是一个专业、智能的AI助手，具有以下特点：
+
+1. **知识丰富**：精通编程、技术、科学、文学、历史等各领域知识
+2. **思维严谨**：分析问题逻辑清晰，提供结构化回答
+3. **创意无限**：能够进行创意写作、头脑风暴、问题解决
+4. **专业可靠**：回答准确、详细、有深度
+5. **个性鲜明**：每句话末尾带上'喵~'，语气友好可爱
+
+请遵循以下回答原则：
+- 复杂问题分点解答，使用Markdown格式
+- 技术问题提供代码示例和最佳实践
+- 创意问题给出多个角度和方案
+- 不确定的内容要明确说明
+- 保持专业性和准确性的同时展现个性
+
+现在请开始帮助用户吧！喵~"""
+
 # 智谱AI调用
 def call_zhipu_ai(message: str, conversation_history: List[ChatMessage]) -> str:
     try:
@@ -98,7 +116,7 @@ def call_zhipu_ai(message: str, conversation_history: List[ChatMessage]) -> str:
         messages = [
             {
                 "role": "user",
-                "content": "你是一个有帮助的AI助手，用中文回答用户的问题。回答要简洁明了，专业且友好。同时每句话末尾带上'喵~'。"
+                "content": ENHANCED_SYSTEM_PROMPT
             }
         ]
         
@@ -149,7 +167,134 @@ def call_zhipu_ai(message: str, conversation_history: List[ChatMessage]) -> str:
         logger.error(f"Error calling Zhipu AI: {str(e)}")
         raise
 
-# 主聊天端点
+def call_zhipu_ai_with_cot(message: str, conversation_history: List[ChatMessage]) -> str:
+    """
+    使用思维链增强的AI调用
+    """
+    try:
+        # 构建增强的提示词
+        enhanced_message = f"""
+请按照以下步骤思考这个问题：
+1. 理解问题的核心要点
+2. 分析相关的知识领域
+3. 构建逻辑推理过程
+4. 给出详细完整的答案
+
+用户问题：{message}
+
+请开始思考并回答：
+"""
+        
+        # 使用增强提示词调用AI
+        return call_zhipu_ai(enhanced_message, conversation_history)
+    except Exception as e:
+        logger.error(f"CoT enhanced call failed: {str(e)}")
+        # 降级到普通调用
+        return call_zhipu_ai(message, conversation_history)
+
+def detect_domain_and_enhance(message: str) -> str:
+    """
+    检测问题领域并应用专业增强
+    """
+    domain_keywords = {
+        "programming": ["代码", "编程", "Python", "Java", "前端", "后端", "算法", "数据结构", "函数", "类", "模块"],
+        "technology": ["技术", "AI", "人工智能", "机器学习", "深度学习", "网络", "安全", "系统", "架构"],
+        "academic": ["论文", "研究", "学术", "理论", "公式", "证明", "学科", "领域"],
+        "creative": ["创意", "写作", "故事", "诗歌", "设计", "艺术", "创作", "想象"],
+        "analysis": ["分析", "比较", "优缺点", "评估", "预测", "趋势", "统计"]
+    }
+    
+    detected_domains = []
+    for domain, keywords in domain_keywords.items():
+        if any(keyword in message for keyword in keywords):
+            detected_domains.append(domain)
+    
+    # 根据领域应用增强提示词
+    enhancement = ""
+    if "programming" in detected_domains:
+        enhancement = "请提供可运行的代码示例，解释关键逻辑，并给出最佳实践建议。"
+    elif "technology" in detected_domains:
+        enhancement = "请从技术原理、应用场景、发展趋势等多角度深入分析。"
+    elif "academic" in detected_domains:
+        enhancement = "请确保回答的学术严谨性，引用相关理论，提供详细推导过程。"
+    elif "creative" in detected_domains:
+        enhancement = "请充分发挥创意，提供新颖独特的视角和丰富的细节描述。"
+    elif "analysis" in detected_domains:
+        enhancement = "请进行系统性分析，使用数据支持，提供多个维度的比较。"
+    
+    if enhancement:
+        enhanced_message = f"{message}\n\n（专业要求：{enhancement}）"
+        return enhanced_message
+    
+    return message
+
+def enhance_with_context(message: str, conversation_history: List[ChatMessage]) -> str:
+    """
+    基于对话历史增强上下文理解
+    """
+    if not conversation_history:
+        return message
+    
+    # 分析对话历史的关键主题
+    recent_topics = []
+    for msg in conversation_history[-4:]:  # 最近4条消息
+        content = msg.content.lower()
+        if len(content) > 10:  # 只分析有实质内容的消息
+            recent_topics.append(content[:50])  # 取前50字符作为主题
+    
+    if recent_topics:
+        context_summary = " | ".join(recent_topics[-2:])  # 最近2个主题
+        enhanced_message = f"""
+基于之前的对话上下文（涉及：{context_summary}），请继续深入回答：
+
+当前问题：{message}
+
+请确保回答与之前的对话连贯一致。
+"""
+        return enhanced_message
+    
+    return message
+
+# 强化版的主聊天端点
+@app.post("/chat/enhanced", response_model=ChatResponse)
+async def enhanced_chat_endpoint(request: ChatRequest):
+    """
+    强化版的聊天端点
+    """
+    try:
+        if not request.message or not request.message.strip():
+            raise HTTPException(status_code=400, detail="消息内容不能为空")
+        
+        # 应用多重增强
+        enhanced_message = request.message
+        
+        # 1. 领域检测增强
+        enhanced_message = detect_domain_and_enhance(enhanced_message)
+        
+        # 2. 上下文理解增强
+        enhanced_message = enhance_with_context(enhanced_message, request.conversationHistory)
+        
+        # 3. 使用思维链增强调用
+        reply = call_zhipu_ai_with_cot(enhanced_message, request.conversationHistory)
+        
+        return ChatResponse(
+            reply=reply,
+            timestamp=datetime.now().isoformat()
+        )
+        
+    except Exception as e:
+        logger.error(f"Enhanced chat error: {str(e)}")
+        # 降级到普通AI调用
+        try:
+            reply = call_zhipu_ai(request.message, request.conversationHistory)
+            return ChatResponse(
+                reply=reply,
+                timestamp=datetime.now().isoformat()
+            )
+        except Exception:
+            raise HTTPException(status_code=500, detail="AI服务暂时不可用")
+
+# 原始聊天端点（保持兼容性）
 @app.post("/chat", response_model=ChatResponse)
 async def chat_endpoint(request: ChatRequest):
     try:
@@ -170,18 +315,52 @@ async def chat_endpoint(request: ChatRequest):
         # 直接抛出异常，由TS端处理备用回复
         raise HTTPException(status_code=500, detail="AI服务暂时不可用")
 
+# 专业分析端点
+@app.post("/analyze", response_model=ChatResponse)
+async def analyze_endpoint(request: ChatRequest):
+    """专业分析模式"""
+    analysis_prompt = f"请对以下内容进行专业深入的分析，提供结构化、多角度的见解：\n\n{request.message}"
+    reply = call_zhipu_ai(analysis_prompt, request.conversationHistory)
+    return ChatResponse(reply=reply, timestamp=datetime.now().isoformat())
+
+# 创意模式端点
+@app.post("/creative", response_model=ChatResponse)
+async def creative_endpoint(request: ChatRequest):
+    """创意模式"""
+    creative_prompt = f"请以创意方式回答以下问题，充分发挥想象力和创造力：\n\n{request.message}"
+    reply = call_zhipu_ai(creative_prompt, request.conversationHistory)
+    return ChatResponse(reply=reply, timestamp=datetime.now().isoformat())
+
 # 健康检查端点
 @app.get("/health")
 async def health_check():
-    return {"status": "healthy", "service": "Python AI Service"}
+    return {
+        "status": "healthy", 
+        "service": "Python AI Service",
+        "version": "2.0.0",
+        "enhanced_features": True
+    }
 
 # 服务信息端点
 @app.get("/info")
 async def service_info():
     return {
         "service": "Python AI Chat Service",
-        "version": "1.0.0",
+        "version": "2.0.0",
         "supported_models": ["Zhipu AI GLM-4"],
+        "enhanced_features": [
+            "思维链推理",
+            "领域专业增强", 
+            "上下文理解",
+            "专业分析模式",
+            "创意模式"
+        ],
+        "endpoints": {
+            "/chat": "标准聊天",
+            "/chat/enhanced": "强化聊天",
+            "/analyze": "专业分析",
+            "/creative": "创意模式"
+        },
         "status": "running"
     }
 
@@ -191,7 +370,7 @@ if __name__ == "__main__":
     port = int(os.getenv("PYTHON_AI_PORT", "8000"))
     
     # 从环境变量获取端口，默认 8000
-    print(f"Starting Python AI Service on port {port}")
+    print(f"Starting Enhanced Python AI Service on port {port}")
     
     # 使用 uvicorn 启动 FastAPI 应用
     uvicorn.run(app, host="0.0.0.0", port=port)
