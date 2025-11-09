@@ -26,7 +26,8 @@
     <!-- 模式提示 -->
     <div class="mode-indicator" :class="currentMode">
       <span class="mode-icon">
-        {{ modeIcons[currentMode] }}
+        <!-- 使用 img 标签显示图标 -->
+        <img :src="modeIcons[currentMode]" :alt="modeLabels[currentMode]" class="mode-icon-img">
       </span>
       <span class="mode-text">{{ modeLabels[currentMode] }}</span>
     </div>
@@ -123,6 +124,10 @@ import { useRouter } from 'vue-router'
 import axios from 'axios'
 import { marked } from 'marked'
 
+import enhancedIcon from '@/assets/images/enhanced.png'
+import analyzeIcon from '@/assets/images/analyze.png'
+import creativeIcon from '@/assets/images/creative.png'
+
 const router = useRouter()
 
 const goBack = () => {
@@ -160,9 +165,9 @@ const currentMode = ref('enhanced') // enhanced, analyze, creative
 
 // 模式配置
 const modeIcons = {
-  enhanced: '🧠',
-  analyze: '📊',
-  creative: '💡'
+  enhanced: enhancedIcon,
+  analyze: analyzeIcon,
+  creative: creativeIcon
 }
 
 const modeLabels = {
@@ -629,27 +634,33 @@ onMounted(() => {
 }
 
 .mode-indicator.analyze {
-  background: rgba(33, 150, 243, 0.1);
+  background: linear-gradient(135deg, rgba(0,0,0,0.2) 0%,rgba(102, 226, 207,0.4) 50%, rgba(243, 250, 107, 0.283) 100%);
 }
 
 .mode-indicator.creative {
-  background: rgba(156, 39, 176, 0.1);
+  background: linear-gradient(135deg, rgba(0,0,0,0.2) 0%,rgba(102, 226, 207, 0.584) 50%, rgba(243, 250, 107, 0.7) 100%);
 }
 
 .dark-mode .mode-indicator {
-  background: rgba(76, 175, 80, 0.2);
+  background: linear-gradient(135deg, rgba(0,0,0,0.2) 0%,rgba(99, 23, 251, 0.311) 50%, rgba(1, 97, 157, 0.26) 100%);
 }
 
 .dark-mode .mode-indicator.analyze {
-  background: rgba(33, 150, 243, 0.2);
+  background: linear-gradient(135deg, rgba(0, 0, 0, 0.128) 0%,rgba(99, 23, 251, 0.635) 50%, rgba(1, 97, 157, 0.566) 100%);
 }
 
 .dark-mode .mode-indicator.creative {
-  background: rgba(156, 39, 176, 0.2);
+  background: linear-gradient(135deg, rgba(0,0,0,0.2) 0%,rgba(99, 23, 251, 0.856) 50%, rgba(1, 97, 157, 0.71) 100%);
 }
 
 .mode-icon {
   font-size: 1.1rem;
+}
+
+.mode-icon-img {
+  width: 20px;
+  height: 20px;
+  vertical-align: middle;
 }
 
 .mode-text {
