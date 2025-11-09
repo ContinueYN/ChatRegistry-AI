@@ -8,6 +8,7 @@
           <!-- 模式选择 -->
           <div class="mode-selector">
             <select v-model="currentMode" @change="onModeChange" class="mode-select">
+              <option value="chat">聊天模式</option>
               <option value="enhanced">智能模式</option>
               <option value="analyze">专业分析</option>
               <option value="creative">创意模式</option>
@@ -124,6 +125,7 @@ import { useRouter } from 'vue-router'
 import axios from 'axios'
 import { marked } from 'marked'
 
+import chatIcon from '@/assets/images/chat.png'
 import enhancedIcon from '@/assets/images/enhanced.png'
 import analyzeIcon from '@/assets/images/analyze.png'
 import creativeIcon from '@/assets/images/creative.png'
@@ -161,22 +163,25 @@ const messagesContainer = ref<HTMLElement>()
 const textInput = ref<HTMLTextAreaElement>()
 
 // 模式选择
-const currentMode = ref('enhanced') // enhanced, analyze, creative
+const currentMode = ref('chat') // chat, enhanced, analyze, creative
 
 // 模式配置
 const modeIcons = {
+  chat: chatIcon,
   enhanced: enhancedIcon,
   analyze: analyzeIcon,
   creative: creativeIcon
 }
 
 const modeLabels = {
+  chat: '聊天模式 - 基础对话',
   enhanced: '智能模式 - 综合运用多种增强技术',
   analyze: '专业分析 - 深度结构化分析',
   creative: '创意模式 - 充分发挥想象力'
 }
 
 const modeEndpoints = {
+  chat:'/api/ai/chat',
   enhanced: '/api/ai/chat/enhanced',
   analyze: '/api/ai/analyze',
   creative: '/api/ai/creative'
