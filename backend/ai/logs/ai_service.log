@@ -47,3 +47,6 @@
 2025-11-09 16:00:48,351 - __main__ - INFO - API响应状态码: 200
 2025-11-09 16:00:48,354 - __main__ - INFO - AI回复生成成功，长度: 910
 2025-11-09 16:00:48,357 - __main__ - INFO - 增强聊天处理完成
+2025-11-09 16:15:23,560 - __main__ - INFO - === AI服务启动 - 纯文件日志模式 ===
+2025-11-09 16:15:23,561 - __main__ - INFO - 日志文件路径: E:\Work-program\Project\Label\backend\ai\logs\ai_service.log
+2025-11-09 16:15:23,623 - __main__ - INFO - Starting Enhanced Python AI Service on port 8000

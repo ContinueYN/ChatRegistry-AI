@@ -567,66 +567,16 @@ app.post("/api/ai/chat", async (req: Request, res: Response) => {
       });
     }
 
-    // 规范化输入（去掉常见标点和多余空白）
-    const normalize = (s: string) =>
-      s
-        .replace(/[\p{P}\p{S}]/gu, "")
-        .replace(/\s+/g, " ")
-        .toLowerCase()
-        .trim();
-    const normalizedMessage = normalize(message);
-
-    // 优先使用自定义回复（从 data/replies.txt 加载），支持正则、别名、tokens、包含匹配
-    const matchRule = (rule: CustomReplyRule, msgNorm: string): boolean => {
-      try {
-        if (rule.type === "regex" && rule.regex) {
-          return rule.regex.test(message);
-        }
-
-        if (rule.type === "aliases" && rule.alternatives) {
-          return rule.alternatives.some((alt) =>
-            msgNorm.includes(normalize(alt))
-          );
-        }
-
-        if (rule.type === "tokens" && rule.tokens) {
-          return rule.tokens.every((t) => msgNorm.includes(normalize(t)));
-        }
-
-        // include
-        return msgNorm.includes(normalize(rule.raw));
-      } catch (err) {
-        return false;
-      }
-    };
-
-    for (const rule of customReplyRules) {
-      if (matchRule(rule, normalizedMessage)) {
-        return res.json({
-          success: true,
-          data: {
-            reply: rule.reply,
-            timestamp: new Date().toISOString(),
-          },
-        });
-      }
-    }
-
-    // 兜底的内置短语（仅当文件中没有匹配时使用）
-    const specialReplies: { [key: string]: string } = {
-      你是谁: "我是由余诺设计出来的兽耳小萝莉",
-    };
-
-    for (const [key, reply] of Object.entries(specialReplies)) {
-      if (message.includes(key)) {
-        return res.json({
-          success: true,
-          data: {
-            reply,
-            timestamp: new Date().toISOString(),
-          },
-        });
-      }
+   // 使用封装的函数匹配自定义回复
+    const customReply = matchCustomReply(message);
+    if (customReply) {
+      return res.json({
+        success: true,
+        data: {
+          reply: customReply,
+          timestamp: new Date().toISOString(),
+        },
+      });
     }
 
     // 调用AI服务，传入选择的模式
@@ -663,65 +613,16 @@ app.post("/api/ai/chat/enhanced", async (req: Request, res: Response) => {
         message: "消息内容不能为空",
       });
     }
-    const normalize = (s: string) =>
-      s
-        .replace(/[\p{P}\p{S}]/gu, "")
-        .replace(/\s+/g, " ")
-        .toLowerCase()
-        .trim();
-    const normalizedMessage = normalize(message);
-
-    // 优先使用自定义回复（从 data/replies.txt 加载），支持正则、别名、tokens、包含匹配
-    const matchRule = (rule: CustomReplyRule, msgNorm: string): boolean => {
-      try {
-        if (rule.type === "regex" && rule.regex) {
-          return rule.regex.test(message);
-        }
-
-        if (rule.type === "aliases" && rule.alternatives) {
-          return rule.alternatives.some((alt) =>
-            msgNorm.includes(normalize(alt))
-          );
-        }
-
-        if (rule.type === "tokens" && rule.tokens) {
-          return rule.tokens.every((t) => msgNorm.includes(normalize(t)));
-        }
-
-        // include
-        return msgNorm.includes(normalize(rule.raw));
-      } catch (err) {
-        return false;
-      }
-    };
-
-    for (const rule of customReplyRules) {
-      if (matchRule(rule, normalizedMessage)) {
-        return res.json({
-          success: true,
-          data: {
-            reply: rule.reply,
-            timestamp: new Date().toISOString(),
-          },
-        });
-      }
-    }
-
-    // 兜底的内置短语（仅当文件中没有匹配时使用）
-    const specialReplies: { [key: string]: string } = {
-      你是谁: "我是由余诺设计出来的兽耳小萝莉",
-    };
-
-    for (const [key, reply] of Object.entries(specialReplies)) {
-      if (message.includes(key)) {
-        return res.json({
-          success: true,
-          data: {
-            reply,
-            timestamp: new Date().toISOString(),
-          },
-        });
-      }
+    // 使用封装的函数匹配自定义回复
+    const customReply = matchCustomReply(message);
+    if (customReply) {
+      return res.json({
+        success: true,
+        data: {
+          reply: customReply,
+          timestamp: new Date().toISOString(),
+        },
+      });
     }
     // 调用Python服务的智能增强模式
     const aiResponse = await callAIServiceWithMode(
@@ -757,65 +658,16 @@ app.post("/api/ai/analyze", async (req: Request, res: Response) => {
         message: "消息内容不能为空",
       });
     }
-    const normalize = (s: string) =>
-      s
-        .replace(/[\p{P}\p{S}]/gu, "")
-        .replace(/\s+/g, " ")
-        .toLowerCase()
-        .trim();
-    const normalizedMessage = normalize(message);
-
-    // 优先使用自定义回复（从 data/replies.txt 加载），支持正则、别名、tokens、包含匹配
-    const matchRule = (rule: CustomReplyRule, msgNorm: string): boolean => {
-      try {
-        if (rule.type === "regex" && rule.regex) {
-          return rule.regex.test(message);
-        }
-
-        if (rule.type === "aliases" && rule.alternatives) {
-          return rule.alternatives.some((alt) =>
-            msgNorm.includes(normalize(alt))
-          );
-        }
-
-        if (rule.type === "tokens" && rule.tokens) {
-          return rule.tokens.every((t) => msgNorm.includes(normalize(t)));
-        }
-
-        // include
-        return msgNorm.includes(normalize(rule.raw));
-      } catch (err) {
-        return false;
-      }
-    };
-
-    for (const rule of customReplyRules) {
-      if (matchRule(rule, normalizedMessage)) {
-        return res.json({
-          success: true,
-          data: {
-            reply: rule.reply,
-            timestamp: new Date().toISOString(),
-          },
-        });
-      }
-    }
-
-    // 兜底的内置短语（仅当文件中没有匹配时使用）
-    const specialReplies: { [key: string]: string } = {
-      你是谁: "我是由余诺设计出来的兽耳小萝莉",
-    };
-
-    for (const [key, reply] of Object.entries(specialReplies)) {
-      if (message.includes(key)) {
-        return res.json({
-          success: true,
-          data: {
-            reply,
-            timestamp: new Date().toISOString(),
-          },
-        });
-      }
+    // 使用封装的函数匹配自定义回复
+    const customReply = matchCustomReply(message);
+    if (customReply) {
+      return res.json({
+        success: true,
+        data: {
+          reply: customReply,
+          timestamp: new Date().toISOString(),
+        },
+      });
     }
 
     // 调用Python服务的专业分析模式
@@ -853,65 +705,16 @@ app.post("/api/ai/creative", async (req: Request, res: Response) => {
         message: "消息内容不能为空",
       });
     }
-    const normalize = (s: string) =>
-      s
-        .replace(/[\p{P}\p{S}]/gu, "")
-        .replace(/\s+/g, " ")
-        .toLowerCase()
-        .trim();
-    const normalizedMessage = normalize(message);
-
-    // 优先使用自定义回复（从 data/replies.txt 加载），支持正则、别名、tokens、包含匹配
-    const matchRule = (rule: CustomReplyRule, msgNorm: string): boolean => {
-      try {
-        if (rule.type === "regex" && rule.regex) {
-          return rule.regex.test(message);
-        }
-
-        if (rule.type === "aliases" && rule.alternatives) {
-          return rule.alternatives.some((alt) =>
-            msgNorm.includes(normalize(alt))
-          );
-        }
-
-        if (rule.type === "tokens" && rule.tokens) {
-          return rule.tokens.every((t) => msgNorm.includes(normalize(t)));
-        }
-
-        // include
-        return msgNorm.includes(normalize(rule.raw));
-      } catch (err) {
-        return false;
-      }
-    };
-
-    for (const rule of customReplyRules) {
-      if (matchRule(rule, normalizedMessage)) {
-        return res.json({
-          success: true,
-          data: {
-            reply: rule.reply,
-            timestamp: new Date().toISOString(),
-          },
-        });
-      }
-    }
-
-    // 兜底的内置短语（仅当文件中没有匹配时使用）
-    const specialReplies: { [key: string]: string } = {
-      你是谁: "我是由余诺设计出来的兽耳小萝莉",
-    };
-
-    for (const [key, reply] of Object.entries(specialReplies)) {
-      if (message.includes(key)) {
-        return res.json({
-          success: true,
-          data: {
-            reply,
-            timestamp: new Date().toISOString(),
-          },
-        });
-      }
+    // 使用封装的函数匹配自定义回复
+    const customReply = matchCustomReply(message);
+    if (customReply) {
+      return res.json({
+        success: true,
+        data: {
+          reply: customReply,
+          timestamp: new Date().toISOString(),
+        },
+      });
     }
 
     // 调用Python服务的创意模式
@@ -937,6 +740,61 @@ app.post("/api/ai/creative", async (req: Request, res: Response) => {
     });
   }
 });
+
+// 自定义回复匹配函数
+function matchCustomReply(message: string): string | null {
+  const normalize = (s: string) =>
+    s
+      .replace(/[\p{P}\p{S}]/gu, "")
+      .replace(/\s+/g, " ")
+      .toLowerCase()
+      .trim();
+  
+  const normalizedMessage = normalize(message);
+
+  const matchRule = (rule: CustomReplyRule, msgNorm: string): boolean => {
+    try {
+      if (rule.type === "regex" && rule.regex) {
+        return rule.regex.test(message);
+      }
+
+      if (rule.type === "aliases" && rule.alternatives) {
+        return rule.alternatives.some((alt) =>
+          msgNorm.includes(normalize(alt))
+        );
+      }
+
+      if (rule.type === "tokens" && rule.tokens) {
+        return rule.tokens.every((t) => msgNorm.includes(normalize(t)));
+      }
+
+      // include
+      return msgNorm.includes(normalize(rule.raw));
+    } catch (err) {
+      return false;
+    }
+  };
+
+  // 优先匹配自定义回复规则
+  for (const rule of customReplyRules) {
+    if (matchRule(rule, normalizedMessage)) {
+      return rule.reply;
+    }
+  }
+
+  // 兜底的内置短语
+  const specialReplies: { [key: string]: string } = {
+    你是谁: "我是由余诺设计出来的兽耳小萝莉",
+  };
+
+  for (const [key, reply] of Object.entries(specialReplies)) {
+    if (message.includes(key)) {
+      return reply;
+    }
+  }
+
+  return null;
+}
 
 // 通用的AI服务调用函数（支持不同模式）
 async function callAIServiceWithMode(message: string, conversationHistory: any[], mode: 'chat' | 'enhanced' | 'analyze' | 'creative'): Promise<string> {
