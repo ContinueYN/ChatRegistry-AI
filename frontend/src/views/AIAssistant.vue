@@ -18,7 +18,7 @@
             {{ isDarkMode ? '🌙' : '☀️' }}
           </button>
           <button class="clear-chat" @click="clearChat">
-             清空对话
+            清空对话
           </button>
         </div>
       </div>
@@ -46,12 +46,8 @@
             <div class="quick-questions">
               <h4>您可以问我：</h4>
               <div class="question-chips">
-                <button 
-                  v-for="question in quickQuestions" 
-                  :key="question"
-                  class="question-chip"
-                  @click="sendQuickQuestion(question)"
-                >
+                <button v-for="question in quickQuestions" :key="question" class="question-chip"
+                  @click="sendQuickQuestion(question)">
                   {{ question }}
                 </button>
               </div>
@@ -60,41 +56,28 @@
         </div>
 
         <!-- 消息列表 -->
-        <div 
-          v-for="(message, index) in messages" 
-          :key="index"
-          :class="['message', message.type === 'user' ? 'user-message' : 'ai-message']"
-        >
+        <div v-for="(message, index) in messages" :key="index"
+          :class="['message', message.type === 'user' ? 'user-message' : 'ai-message']">
           <div class="avatar">
             <!-- 用户消息使用用户图标 -->
-            <img 
-              v-if="message.type === 'user'" 
-              src="@/assets/icons/favicon2.ico" 
-              alt="用户" 
-              class="avatar-icon"
-            >
+            <img v-if="message.type === 'user'" src="@/assets/icons/favicon2.ico" alt="用户" class="avatar-icon">
             <!-- AI消息使用机器人图标 -->
-            <img 
-              v-else 
-              src="@/assets/icons/favicon1.ico" 
-              alt="AI" 
-              class="avatar-icon"
-            >
+            <img v-else src="@/assets/icons/favicon1.ico" alt="AI" class="avatar-icon">
           </div>
           <div class="message-content">
             <!-- 用户消息保持原样 -->
             <p v-if="message.type === 'user'">{{ message.content }}</p>
-            
+
             <!-- AI消息显示打字效果 -->
             <div v-else-if="message.isTyping" class="typing-indicator">
               <span></span>
               <span></span>
               <span></span>
             </div>
-            
+
             <!-- AI消息渲染Markdown -->
             <div v-else class="ai-response-content" v-html="message.renderedContent"></div>
-            
+
             <div class="message-time">{{ message.time }}</div>
           </div>
         </div>
@@ -104,15 +87,11 @@
     <!-- 输入区域 -->
     <footer class="input-container">
       <div class="input-wrapper">
-        <textarea
-          v-model="userInput"
-          placeholder="输入您的问题..."
-          @keydown.enter.exact.prevent="sendMessage"
-          rows="1"
-          ref="textInput"
-          @input="autoResize"
-        ></textarea>
-        <button class="send-button" @click="sendMessage" :disabled="!userInput.trim()">发送
+        <textarea v-model="userInput" placeholder="输入您的问题..." @keydown.enter.exact.prevent="sendMessage" rows="1"
+          ref="textInput" @input="autoResize"></textarea>
+        <button class="send-button" @click="sendMessage" :disabled="!userInput.trim()">
+          <span class="first-child"></span>
+          <span class="last-child"></span>
         </button>
       </div>
     </footer>
@@ -796,6 +775,7 @@ onMounted(() => {
   border-radius: 20px;
   border-top: 1px solid #e1e5e9;
   padding: 1.5rem;
+  transition: all 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
 }
 
 .dark-mode .input-container {
@@ -809,60 +789,270 @@ onMounted(() => {
   display: flex;
   align-items: flex-end;
   gap: 1rem;
+  position: relative;
 }
 
+/* 输入区域样式 */
+.input-container {
+  background: rgba(195, 240, 190, 0.39);
+  border-radius: 20px;
+  border-top: 1px solid #e1e5e9;
+  padding: 1.5rem;
+  transition: all 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+}
+
+.dark-mode .input-container {
+  background: #3e38e346;
+  border-top-color: #404040;
+}
+
+.input-wrapper {
+  max-width: 1200px;
+  margin: 0 auto;
+  display: flex;
+  align-items: flex-end;
+  gap: 1rem;
+  position: relative;
+}
+
+/* 输入框样式 */
 .input-wrapper textarea {
   flex: 1;
   border: 1px solid #e1e5e9;
-  border-radius: 12px;
+  border-radius: 16px;
   padding: 0.75rem 1rem;
   font-size: 1rem;
   resize: none;
   max-height: 120px;
   outline: none;
-  transition: all 0.3s ease;
+  transition: all 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
   background: #f8f9fa;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  transform-origin: center bottom;
 }
 
 .dark-mode .input-wrapper textarea {
   background: #404040;
   border-color: #555;
   color: #e0e0e0;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
 }
 
 .input-wrapper textarea:focus {
   border-color: #4CAF50;
   background: white;
+  border-radius: 2rem;
+  box-shadow: 
+    0 4px 16px rgba(76, 175, 80, 0.15),
+    0 0 0 3px rgba(76, 175, 80, 0.1);
+  transform: translateY(-2px);
 }
 
 .dark-mode .input-wrapper textarea:focus {
+  border-color: #844caf;
   background: #4a4a4a;
+  box-shadow: 
+    0 4px 16px rgba(127, 76, 175, 0.25),
+    0 0 0 3px rgba(120, 76, 175, 0.15);
 }
 
+/* 输入框占位符动画 */
+.input-wrapper textarea::placeholder {
+  color: #181818;
+  transition: all 0.3s ease;
+  opacity: 0.7;
+}
+
+.input-wrapper textarea:focus::placeholder {
+  opacity: 0;
+  transform: translateX(10px);
+}
+
+/* 深色模式占位符 */
+.dark-mode .input-wrapper textarea::placeholder {
+  color: #f5efef;
+}
+
+.dark-mode .input-wrapper textarea:focus::placeholder {
+  opacity: 0;
+  transform: translateX(10px);
+}
+
+/* 发送按钮 */
 .send-button {
-  background: #4CAF50;
+  background: linear-gradient(135deg, rgba(221, 225, 188, 0.635) 50%, #56bf5bb5 100%);
   color: white;
   border: none;
-  border-radius: 12px;
-  width: 44px;
-  height: 44px;
+  border-radius: 16px;
+  width: 50px;
+  height: 50px;
   display: flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
+  transition: all 0.6s cubic-bezier(0.23, 1, 0.320, 1);
+  position: relative;
+  overflow: hidden;
+  box-shadow: 
+    0 4px 12px rgba(76, 175, 80, 0.3),
+    0 2px 6px rgba(76, 175, 80, 0.2);
+  font-weight: 600;
+}
+
+/* 修复背景色过渡 */
+.send-button {
+  transition: 
+    background 0.4s ease,
+    transform 0.6s cubic-bezier(0.23, 1, 0.320, 1),
+    box-shadow 0.6s cubic-bezier(0.23, 1, 0.320, 1);
+}
+
+/* 圆圈晕开效果 */
+.send-button .last-child {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 20px;
+  height: 20px;
+  background: linear-gradient(135deg, #a3eb63d4 50%, #e7ff60b1 100%);
+  border-radius: 50%;
+  opacity: 1;
+  transition: all 1.2s cubic-bezier(0.23, 1, 0.320, 1);
+}
+
+.dark-mode .send-button .last-child {
+  background: linear-gradient(135deg, #4458f3d4 50%, #da60ffb1 100%);
+}
+
+.send-button .first-child {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+}
+
+/* 发送按钮悬停效果  */
+.send-button:hover:not(:disabled) {
+  background: linear-gradient(90deg, #e1ef89d4 50%, #79f28e70 100%);
+  transform: 
+    translateY(-3px) 
+    scale(1.05);
+  box-shadow: 
+    0 6px 20px rgba(163, 175, 76, 0.4),
+    0 4px 12px rgba(165, 175, 76, 0.3);
+  transition: all 0.7s ease;
+}
+
+.send-button:hover:not(:disabled) .last-child {
+  width: 150px;
+  height: 150px;
+  opacity: 1;
+  background-color: rgba(255, 255, 255, 0.15);
+}
+
+/* 深色模式发送按钮优化 */
+.dark-mode .send-button {
+  background: linear-gradient(135deg, #ab7cab 0%, #8f8fba 100%);
+  box-shadow: 
+    0 4px 12px rgba(76, 87, 175, 0.3),
+    0 2px 6px rgba(152, 76, 175, 0.2);
+  transition: 
+    background 0.4s ease,
+    transform 0.6s cubic-bezier(0.23, 1, 0.320, 1),
+    box-shadow 0.6s cubic-bezier(0.23, 1, 0.320, 1);
+}
+
+.dark-mode .send-button:hover:not(:disabled) {
+  background: linear-gradient(135deg, #717071 0%, #6c6d6e 100%);
+  box-shadow: 
+    0 6px 20px rgba(120, 76, 175, 0.4),
+    0 4px 12px rgba(83, 76, 175, 0.3);
+}
+
+/* 发送按钮点击效果 */
+.send-button:active:not(:disabled) {
+  transform: 
+    translateY(-1px) 
+    scale(0.98);
+  box-shadow: 
+    0 2px 8px rgba(84, 76, 175, 0.3),
+    0 1px 4px rgba(162, 76, 175, 0.2);
+  transition: all 0.1s ease;
+}
+
+.send-button:active:not(:disabled) span:last-child {
+  width: 180px;
+  height: 180px;
+  opacity: 0.8;
   transition: all 0.3s ease;
 }
 
-.send-button:hover:not(:disabled) {
-  background: #45a049;
-  transform: scale(1.05);
-}
-
+/* 禁用状态 */
 .send-button:disabled {
-  background: #ccc;
+  background: linear-gradient(135deg, #cccccc 0%, #aaaaaa 100%);
   cursor: not-allowed;
   opacity: 0.6;
+  transform: none;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+  transition: all 0.6s ease;
 }
+
+.send-button:disabled span:last-child {
+  width: 20px;
+  height: 20px;
+  opacity: 0.2;
+}
+
+/* 发送图标动画 */
+.send-button::after {
+  content: '➤';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  transition: all 0.3s ease;
+  opacity: 1;
+  z-index: 2;
+}
+
+.send-button:hover::after {
+  transform: translate(-50%, -50%) scale(1.1);
+}
+
+.send-button:active::after {
+  transform: translate(-50%, -50%) scale(0.9);
+}
+
+/* 发送成功动画 */
+.send-button.sent {
+  animation: sendSuccess 0.6s ease;
+}
+
+@keyframes sendSuccess {
+  0% {
+    transform: scale(1);
+    background: linear-gradient(135deg, #4CAF50 0%, #45a049 100%);
+  }
+  50% {
+    transform: scale(1.1);
+    background: linear-gradient(135deg, #66bb6a 0%, #4CAF50 100%);
+  }
+  100% {
+    transform: scale(1);
+    background: linear-gradient(135deg, #4CAF50 0%, #45a049 100%);
+  }
+}
+
+/* 深色模式发送按钮优化 */
+.dark-mode .send-button span:last-child {
+  background-color: rgba(255, 255, 255, 0.2);
+}
+
+
 
 /* 打字指示器 */
 .typing-indicator {
@@ -1061,6 +1251,36 @@ onMounted(() => {
 
   .ai-assistant{
     width: 90vw;
+  }
+}
+
+/* 响应式优化 */
+@media (max-width: 768px) {
+  .input-wrapper {
+    flex-direction: column;
+    gap: 0.8rem;
+  }
+  
+  .send-button {
+    width: 100%;
+    height: 44px;
+    border-radius: 12px;
+    align-self: stretch;
+  }
+  
+  .input-wrapper textarea:focus {
+    transform: translateY(-1px);
+  }
+  
+  .send-button:hover:not(:disabled) {
+    transform: 
+      translateY(-2px) 
+      scale(1.02);
+  }
+  
+  .send-button:hover:not(:disabled) span:last-child {
+    width: 120px;
+    height: 120px;
   }
 }
 </style>
