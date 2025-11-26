@@ -52,7 +52,11 @@
               :key="index" 
               class="history-item"
             >
-              {{ record.time }}: {{ record.numbers.join(', ') }}
+              <div class="record-time">{{ record.time }}</div>
+              <div class="record-numbers">{{ record.numbers.join(', ') }}</div>
+              <div class="record-prize" :class="getPrizeClass(record.prizeLevel)">
+                {{ record.prizeLevel }} - {{ record.blessing }}
+              </div>
             </div>
           </div>
         </div>
@@ -60,6 +64,12 @@
       
       <div class="lottery-display">
         <div ref="threeContainer" class="three-container"></div>
+        
+        <!-- 祝福语显示区域 -->
+        <div class="blessing-container" v-if="currentBlessing">
+          <div class="blessing-text">{{ currentBlessing }}</div>
+        </div>
+        
         <div class="result-container">
           <div class="result">
             <div 
@@ -90,8 +100,9 @@ const goBack = () => {
 const startNumber = ref<number>(1)
 const endNumber = ref<number>(100)
 const drawCount = ref<number>(5)
-const history = ref<Array<{time: string, numbers: number[]}>>([])
+const history = ref<Array<{time: string, numbers: number[], prizeLevel: string, blessing: string}>>([])
 const currentResult = ref<number[]>([])
+const currentBlessing = ref<string>('')
 const isDrawing = ref<boolean>(false)
 
 // Three.js 相关引用
@@ -102,10 +113,88 @@ let renderer: THREE.WebGLRenderer
 let sphere: THREE.Mesh
 let animationFrameId: number
 
+// 高考祝福语库
+const blessings = {
+  special: [
+    "金榜题名，前程似锦！",
+    "一举夺魁，宏图大展！",
+    "状元及第，光耀门楣！",
+    "独占鳌头，名题金榜！"
+  ],
+  first: [
+    "进士及第，才华横溢！",
+    "学有所成，未来可期！",
+    "才华出众，必成大器！",
+    "智慧超群，前程万里！"
+  ],
+  second: [
+    "举人高中，稳步前行！",
+    "勤学苦练，终有回报！",
+    "踏实进取，未来光明！",
+    "厚积薄发，指日可待！"
+  ],
+  third: [
+    "秀才得意，继续努力！",
+    "初露锋芒，再接再厉！",
+    "基础扎实，稳步提升！",
+    "小有成就，大有可为！"
+  ],
+  participation: [
+    "参与可贵，重在积累！",
+    "每一次尝试都是成长！",
+    "坚持就是胜利！",
+    "继续努力，未来可期！"
+  ]
+}
+
 // 计算属性
 const recentHistory = computed(() => 
   history.value.slice(Math.max(history.value.length - 5, 0))
 )
+
+// 根据号码确定奖项等级
+const getPrizeLevel = (numbers: number[]): string => {
+  const avg = numbers.reduce((a, b) => a + b, 0) / numbers.length;
+  
+  if (numbers.some(num => num === 100)) {
+    return "特等奖";
+  } else if (avg >= 90) {
+    return "一等奖";
+  } else if (avg >= 75) {
+    return "二等奖";
+  } else if (avg >= 60) {
+    return "三等奖";
+  } else {
+    return "参与奖";
+  }
+}
+
+// 获取对应祝福语
+const getBlessing = (prizeLevel: string): string => {
+  const blessingMap: {[key: string]: string[]} = {
+    "特等奖": blessings.special,
+    "一等奖": blessings.first,
+    "二等奖": blessings.second,
+    "三等奖": blessings.third,
+    "参与奖": blessings.participation
+  };
+  
+  const availableBlessings = blessingMap[prizeLevel] || blessings.participation;
+  return availableBlessings[Math.floor(Math.random() * availableBlessings.length)];
+}
+
+// 获取奖项等级对应的CSS类名
+const getPrizeClass = (prizeLevel: string): string => {
+  const classMap: {[key: string]: string} = {
+    "特等奖": "prize-special",
+    "一等奖": "prize-first",
+    "二等奖": "prize-second",
+    "三等奖": "prize-third",
+    "参与奖": "prize-participation"
+  };
+  
+  return classMap[prizeLevel] || "prize-participation";
+}
 
 // 初始化 Three.js 场景
 const initThreeJS = () => {
@@ -206,14 +295,19 @@ const generateRandomNumbers = (): number[] => {
 // 显示结果
 const displayResults = (results: number[]) => {
   currentResult.value = results
-  addToHistory(results)
+  const prizeLevel = getPrizeLevel(results)
+  const blessing = getBlessing(prizeLevel)
+  currentBlessing.value = blessing
+  addToHistory(results, prizeLevel, blessing)
 }
 
 // 添加到历史记录
-const addToHistory = (results: number[]) => {
+const addToHistory = (results: number[], prizeLevel: string, blessing: string) => {
   history.value.push({
     time: new Date().toLocaleTimeString(),
-    numbers: [...results]
+    numbers: [...results],
+    prizeLevel,
+    blessing
   })
 }
 
@@ -278,6 +372,7 @@ const startDraw = () => {
   
   isDrawing.value = true
   currentResult.value = []
+  currentBlessing.value = ''
   
   // 创建粒子爆炸效果
   createParticleEffect()
@@ -294,6 +389,7 @@ const startDraw = () => {
 const reset = () => {
   history.value = []
   currentResult.value = []
+  currentBlessing.value = ''
   startNumber.value = 1
   endNumber.value = 100
   drawCount.value = 5
@@ -387,6 +483,36 @@ onUnmounted(() => {
   position: absolute;
   top: 0;
   left: 0;
+}
+
+/* 祝福语容器样式 */
+.blessing-container {
+  position: absolute;
+  top: 20px;
+  left: 0;
+  width: 100%;
+  text-align: center;
+  z-index: 20;
+}
+
+.blessing-text {
+  font-size: 1.8rem;
+  font-weight: bold;
+  color: #ffeb3b;
+  text-shadow: 0 0 10px rgba(255, 215, 0, 0.8),
+               0 0 20px rgba(255, 165, 0, 0.6),
+               0 0 30px rgba(255, 69, 0, 0.4);
+  background: rgba(0, 0, 0, 0.3);
+  padding: 15px 30px;
+  border-radius: 50px;
+  display: inline-block;
+  animation: blessingPulse 2s infinite;
+}
+
+@keyframes blessingPulse {
+  0% { transform: scale(1); opacity: 0.9; }
+  50% { transform: scale(1.05); opacity: 1; }
+  100% { transform: scale(1); opacity: 0.9; }
 }
 
 .result-container {
@@ -563,6 +689,8 @@ button:disabled {
   padding: 20px;
   max-height: 200px;
   overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(76, 162, 175, 0.6) rgba(0, 0, 0, 0.1);
 }
 
 .history h3 {
@@ -591,9 +719,59 @@ button:disabled {
 
 .history-item {
   background: rgba(0, 150, 255, 0.2);
-  padding: 8px 15px;
-  border-radius: 20px;
+  padding: 12px 15px;
+  border-radius: 15px;
   font-size: 0.9rem;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.record-time {
+  font-size: 0.8rem;
+  opacity: 0.8;
+}
+
+.record-numbers {
+  font-weight: bold;
+  color: #b0e2ff;
+}
+
+.record-prize {
+  font-size: 0.85rem;
+  padding: 3px 8px;
+  border-radius: 10px;
+  display: inline-block;
+  width: fit-content;
+}
+
+/* 奖项等级样式 */
+.prize-special {
+  background: linear-gradient(135deg, #ffd700, #ff8c00);
+  color: #8b0000;
+  font-weight: bold;
+}
+
+.prize-first {
+  background: linear-gradient(135deg, #c0c0c0, #a0a0a0);
+  color: #2f4f4f;
+  font-weight: bold;
+}
+
+.prize-second {
+  background: linear-gradient(135deg, #cd7f32, #8b4513);
+  color: #fff8dc;
+  font-weight: bold;
+}
+
+.prize-third {
+  background: linear-gradient(135deg, #87ceeb, #4682b4);
+  color: white;
+}
+
+.prize-participation {
+  background: linear-gradient(135deg, #98fb98, #32cd32);
+  color: #006400;
 }
 
 /* 动画效果 */
@@ -623,6 +801,11 @@ button:disabled {
     min-width: 400px;
     min-height: 400px;
   }
+  
+  .blessing-text {
+    font-size: 1.5rem;
+    padding: 12px 25px;
+  }
 }
 
 @media (max-width: 500px) {
@@ -639,6 +822,11 @@ button:disabled {
     width: 50px;
     height: 50px;
     font-size: 1.5rem;
+  }
+  
+  .blessing-text {
+    font-size: 1.2rem;
+    padding: 10px 20px;
   }
 }
 
