@@ -288,6 +288,7 @@ const sendMessage = async () => {
   // 检查特殊命令（如返回首页或更多页面）
   if (checkSpecialCommands(userInput.value)) {
     userInput.value = ''
+    await nextTick()
     scrollToBottom()
     return
   }

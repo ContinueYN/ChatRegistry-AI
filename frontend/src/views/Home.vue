@@ -170,7 +170,7 @@ h1 {
 
 /* 背面样式 */
 .card-back {
-  background: linear-gradient(135deg, #ff758cb3 0%, #ff7eb48a 100%);
+  background: linear-gradient(135deg, #9fe3f290 0%, #50a4e98a 100%);
   color: white;
   transform: rotateY(180deg);
 }
@@ -215,7 +215,7 @@ h1 {
 
 .card-button:hover {
   background: white;
-  color: #ff758c;
+  color: #75b5ff;
   transform: translateY(-3px);
   box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
 }

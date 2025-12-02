@@ -28,6 +28,10 @@ import { RouterView } from 'vue-router';
   border-radius: 10px
 }
 
+.container {
+  background: linear-gradient(135deg, rgba(0,0,0,0.2) 0%,rgba(102, 226, 207,0.4) 50%, rgba(107, 188, 250, 0.578) 100%) !important;
+}
+
 nav {
   display: flex;
   justify-content: center; /* 水平居中 */

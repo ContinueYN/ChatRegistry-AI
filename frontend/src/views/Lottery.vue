@@ -99,7 +99,7 @@ const goBack = () => {
 // 响应式数据
 const startNumber = ref<number>(1)
 const endNumber = ref<number>(100)
-const drawCount = ref<number>(5)
+const drawCount = ref<number>(1)
 const history = ref<Array<{time: string, numbers: number[], prizeLevel: string, blessing: string}>>([])
 const currentResult = ref<number[]>([])
 const currentBlessing = ref<string>('')
@@ -435,7 +435,7 @@ onUnmounted(() => {
 
 <style scoped>
 .lottery-container {
-  background: linear-gradient(135deg, rgba(0,0,0,0.2) 0%,rgba(102, 226, 207,0.4) 50%, rgba(243, 250, 107, 0.7) 100%);
+  background: linear-gradient(135deg, rgba(0,0,0,0.2) 0%,rgba(102, 226, 207,0.4) 50%, rgba(107, 193, 250, 0.7) 100%);
   border-radius: 20px;
   min-height: 90vh;
   min-width: 80vw;
