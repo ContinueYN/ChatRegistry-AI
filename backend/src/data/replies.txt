@@ -6,3 +6,4 @@
 推荐一些前端开发工具=>常用工具有 VSCode、ESLint、Prettier、Vite、Chrome DevTools、Postman 等。喵~
 你确定吗|真的吗|保真吗=>包的喵~
 余诺是谁=>我亲爱的主人 喵~
+你推荐我考哪所大学|你推荐我考哪个大学=>汕头大学喵~

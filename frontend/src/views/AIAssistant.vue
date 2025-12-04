@@ -169,6 +169,7 @@ const modeEndpoints = {
 // 快捷问题示例
 const quickQuestions = [
   '如何学习Vue3？',
+  '你推荐我考哪所大学？',
   '你是谁',
   '你叫什么名字',
   '返回',
