@@ -121,3 +121,19 @@
 2025-12-04 12:27:28,439 - __main__ - INFO - API响应状态码: 200
 2025-12-04 12:27:28,439 - __main__ - INFO - AI回复生成成功，长度: 594
 2025-12-04 12:27:28,439 - __main__ - INFO - 专业分析处理完成
+2026-01-07 17:02:26,820 - __main__ - INFO - === AI服务启动 - 纯文件日志模式 ===
+2026-01-07 17:02:26,820 - __main__ - INFO - 日志文件路径: E:\Work-program\Project\PR-4-Label\backend\ai\logs\ai_service.log
+2026-01-07 17:02:27,046 - __main__ - INFO - Starting Enhanced Python AI Service on port 8000
+2026-01-07 17:11:55,877 - __main__ - INFO - 收到标准聊天请求: 写一个helloworld程序...
+2026-01-07 17:11:55,878 - __main__ - INFO - 对话历史消息数: 5
+2026-01-07 17:11:55,879 - __main__ - INFO - 开始标准AI调用...
+2026-01-07 17:11:55,879 - __main__ - INFO - 开始调用智谱AI，消息长度: 15
+2026-01-07 17:11:55,880 - __main__ - INFO - ZHIPU_API_KEY 配置正常
+2026-01-07 17:11:55,880 - __main__ - INFO - 构建完成的消息数量: 7
+2026-01-07 17:11:55,882 - __main__ - INFO - 开始发送请求到智谱AI API...
+2026-01-07 17:12:03,091 - __main__ - INFO - API响应状态码: 200
+2026-01-07 17:12:03,092 - __main__ - INFO - AI回复生成成功，长度: 321
+2026-01-07 17:12:03,096 - __main__ - INFO - 标准聊天处理完成
+2026-01-16 19:47:04,851 - __main__ - INFO - === AI服务启动 - 纯文件日志模式 ===
+2026-01-16 19:47:04,851 - __main__ - INFO - 日志文件路径: E:\Work-program\Project\PR-4-Label\backend\ai\logs\ai_service.log
+2026-01-16 19:47:05,018 - __main__ - INFO - Starting Enhanced Python AI Service on port 8000
